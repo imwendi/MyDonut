@@ -1,15 +1,9 @@
 #ifndef DONUT_TINGS_H
 #define DONUTE_TINGS_H
 
-
-#define THETA_SPACING 0.07
-#define PHI_SPACING 0.02
-
 struct Donut {
-    /* Angle step about x-axis */
-    double A; 
-    /* Angle step about z-axis */
-    double B;
+    double theta_spacing;
+    double phi_spacing;
     int R1;
     int R2;
     int K1;
@@ -20,5 +14,16 @@ struct Donut {
     double **zbuff;
 };
 typedef struct Donut Donut;
+
+Donut *make_donut(double theta_spacing,
+                  double phi_spacing,
+                  int R1,
+                  int R2,
+                  int K2,
+                  int width,
+                  int height);
+void calc_donut(double A, double B, Donut *donut);
+void render_frame(Donut *donut);
+
 
 #endif

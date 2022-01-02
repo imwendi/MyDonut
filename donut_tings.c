@@ -2,18 +2,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "donut_tings.h"
 
-Donut *make_donut(int A,
-                  int B,
+Donut *make_donut(double theta_spacing,
+                  double phi_spacing,
                   int R1,
                   int R2,
                   int K2,
                   int width,
                   int height) {
     Donut *donut = (Donut *) malloc(sizeof(Donut));
-    donut->A = A;
-    donut->B = B;
+    donut->theta_spacing = theta_spacing;
+    donut->phi_spacing = phi_spacing;
     donut->R1 = R1;
     donut->R2 = R2;
     donut->K1 = width*K2*3/(8*(R1+R2));
@@ -31,21 +32,30 @@ Donut *make_donut(int A,
     return donut;
 }
 
-void calc_donut(Donut *donut, char **outbuff, double **zbuff) {
+void reset_buffs(Donut *donut) {
+    for (int i = 0; i < donut->width; ++i) {
+        memset(donut->outbuff[i], ' ', donut->height);
+        memset(donut->zbuff[i], 0, donut->height * sizeof(double));
+    }
+}
+
+void calc_donut(double A, double B, Donut *donut) {
+    reset_buffs(donut);
+
     // Precompute frequently used values
-    double cosA = cos(donut->A);
-    double cosB = cos(donut->B);
-    double sinA = sin(donut->A);
-    double sinB = sin(donut->B);
+    double cosA = cos(A);
+    double cosB = cos(B);
+    double sinA = sin(A);
+    double sinB = sin(B);
 
     // theta goes over circular cross-section of the torus
-    for (double theta = 0; theta < 2 * M_PI; theta += THETA_SPACING) {
+    for (double theta = 0; theta < 2 * M_PI; theta += donut->theta_spacing) {
         // Precompute values
         double costheta = cos(theta);
         double sintheta = sin(theta);
 
         // phi goes around the center of revolution of a torus
-        for (double phi = 0; phi < 2 * M_PI; phi += PHI_SPACING) {
+        for (double phi = 0; phi < 2 * M_PI; phi += donut->phi_spacing) {
             double cosphi = cos(phi);
             double sinphi = sin(phi);
 
@@ -70,43 +80,31 @@ void calc_donut(Donut *donut, char **outbuff, double **zbuff) {
             // L ranges from -sqrt(2) to +sqrt(2).  If it's < 0, the surface
             // is pointing away from us, so we won't bother trying to plot it.
             if (L > 0) {
-                // x and y projection
-                // Note that y is negative as "up" in 3D space is -ve on computer
-                // displays
+                // x and y projection - y is negative as "up" in 3D space is
+                // -ve on the display
                 int xp = (int) (donut->width / 2 + donut->K1 * ooz * x);
                 int yp = (int) (donut->height / 2 - donut->K1 * ooz * y);
 
                 // test against the z-buffer.  larger 1/z means the pixel is
                 // closer to the viewer than what's already plotted.
-                if(ooz > zbuff[xp][yp]) {
-                    zbuff[xp][yp] = ooz;
+                if(ooz > donut->zbuff[xp][yp]) {
+                    donut->zbuff[xp][yp] = ooz;
                     int luminance_index = L*8;
-                    // luminance_index is now in the range 0..11 (8*sqrt(2) = 11.3)
-                    // now we lookup the character corresponding to the
-                    // luminance and plot it in our output:
-                    outbuff[xp][yp] = ".,-~:;=!*#$@"[luminance_index];
+                    // Get luminance
+                    donut->outbuff[xp][yp] = ".,-~:;=!*#$@"[luminance_index];
                 }
             }
         }
     }
 }
 
-void render_frame(Donut *donut, char **outbuff) {
+void render_frame(Donut *donut) {
+    printf("\x1b[d");
     for (int j = 0; j < donut->height; ++j) {
         for (int i = 0; i < donut->width; ++i) {
-            putchar(outbuff[i][j]);
+            putchar(donut->outbuff[i][j]);
         }
         putchar('\n');
     }
-}
-
-double deg2rad(double x) {
-    return x * M_PI / 180.0;
-}
-
-int main() {
-    double A = deg2rad(20);
-    double B = deg2rad(30);
-    Donut *donut = make_donut(A, B, 1, 2, 5, 300, 300);
-
+    printf("\x1b[d");
 }

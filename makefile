@@ -1,11 +1,17 @@
 CC = gcc
 CFLAGS = -Wall -pedantic --std=gnu99 
-OBJS = 
-.PHONY: all clean
-.DEFAULT_GOAL := all
+.PHONY: clean
+.DEFAULT_GOAL := donut
 
-all :
-	$(CC) $(CFLAGS) -o donut donut_tings.c donut_tings.h -lm
+donut : donut_tings.o
+	$(CC) $(CFLAGS) -o donut donut.c donut_tings.o -lm
+
 
 clean :
 		rm donut *.o
+
+# General compile rule
+%.o : %.c 
+		$(CC) $(CFLAGS) -o $@ -c $<
+
+
