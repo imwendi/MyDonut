@@ -1,4 +1,4 @@
 .vscode/**
-./donut
+donut
 *.o
 *.swp
